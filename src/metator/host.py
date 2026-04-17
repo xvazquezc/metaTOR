@@ -473,6 +473,7 @@ def annotate_hosts(
     network_data: pd.DataFrame,
     interaction_threshold: int,
     min_interacting_contigs: int,
+    output_file: str = "mge_mag_interactions.txt",
 ) -> None:
 
     # Loading data and instantiating objects.
@@ -495,6 +496,7 @@ def annotate_hosts(
         mge_mags,
         interaction_threshold=interaction_threshold,
         min_interacting_contigs=min_interacting_contigs,
+        output_file=output_file,
     )
     logger.info("Association finished!!!")
 
