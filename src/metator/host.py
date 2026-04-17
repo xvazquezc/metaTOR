@@ -104,14 +104,15 @@ def create_bins(contig_data: pd.DataFrame) -> tuple[dict, dict]:
     for _, row in contig_data.iterrows():
         contig_id, contig_name, bin_name = row["ID"], row["Name"], row["Final_bin"]
 
-        if bin_name.startswith("MetaTOR_MGE_"):  # Identify MGE-MAGs
-            if bin_name not in mge_mags:
-                mge_mags[bin_name] = MgeMag(bin_name)  # create a new MGE-MAG
-            mge_mags[bin_name].add_contig(contig_name, contig_id)
+        if row.get("MGE", False):  # Identify MGE contigs via the MGE column
+            mge_name = f"MetaTOR_MGE_{contig_name}"
+            if mge_name not in mge_mags:
+                mge_mags[mge_name] = MgeMag(mge_name)
+            mge_mags[mge_name].add_contig(contig_name, contig_id)
 
         elif bin_name.startswith("metator_"):
             if bin_name not in mags:
-                mags[bin_name] = Mag(bin_name)  # create a new MGE-MAG
+                mags[bin_name] = Mag(bin_name)
             mags[bin_name].add_contig(contig_name, contig_id)
     logger.info(f"{len(mags)} MAGs and {len(mge_mags)} MGE-MAGs have been parsed.")
 
