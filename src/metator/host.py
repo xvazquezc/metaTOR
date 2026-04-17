@@ -471,7 +471,6 @@ def compute_mge_mag_interactions(
 def annotate_hosts(
     contig_data: pd.DataFrame,
     network_data: pd.DataFrame,
-    bin_summary: pd.DataFrame,
     interaction_threshold: int,
     min_interacting_contigs: int,
 ) -> None:
