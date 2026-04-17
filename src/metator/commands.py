@@ -33,6 +33,7 @@ import multiprocessing as mp
 import os
 import shutil
 import time
+import pandas as pd
 import metator.align as mta
 import metator.contact_map as mtc
 import metator.host as mth
@@ -1365,8 +1366,15 @@ class Host(AbstractCommand):
         # Import the files
         binning_result = mio.import_anvio_binning(self.args["--binning"])
         mges_list = mio.import_mges_contigs(self.args["--mges"])
-        contig_data, mges_list_id = mio.import_contig_data_mges(self.args["--contig-data"], binning_result, mges_list)
-        network = mio.import_network(self.args["--network"])
+        contig_data, mges_list_id = mio.import_contig_data_mges(
+            self.args["--contig-data"], binning_result, mges_list
+        )
+        network = pd.read_csv(
+            self.args["--network"],
+            sep="\t",
+            names=["contig1", "contig2", "signal"],
+        )
+
 
         # Run the host detection
         mth.host_detection(
