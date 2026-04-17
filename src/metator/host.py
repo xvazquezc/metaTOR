@@ -478,7 +478,6 @@ def annotate_hosts(
     # Loading data and instantiating objects.
     logger.info("Loading data and instantiating objects...")
     mags, mge_mags = create_bins(contig_data)
-    mags = classify_mags(mags, bin_summary)
 
     # Evaluate background noise
     logger.info("Evaluating the background noise of the experience...")
