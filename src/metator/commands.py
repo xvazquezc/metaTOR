@@ -1346,7 +1346,8 @@ class Host(AbstractCommand):
         -c, --contig-data=FILE  Path to the MetaTOR contig data file.
         -i, --min-interacting-contigs=INT
                                 Minimum number of MAG contigs interacting with
-                                the mgeMAG to validate an association.
+                                the mgeMAG to validate an association. Reduce
+                                this parameter to 1 for complete/circular MAGs.
                                 [Default: 5]
         -m, --mges=FILE       Path to the file with mges contigs list.
         -n, --network=FILE      Path to the network file.
