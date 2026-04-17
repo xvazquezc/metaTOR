@@ -1378,6 +1378,8 @@ class Host(AbstractCommand):
             names=["contig1", "contig2", "signal"],
         )
 
+        interaction_threshold = float(self.args["--threshold"])
+        min_interacting_contigs = int(self.args["--min-interacting-contigs"])
 
         # Run the host detection
         mth.annotate_hosts(
