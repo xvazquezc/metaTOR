@@ -1335,21 +1335,24 @@ class Host(AbstractCommand):
     """Detect host of mge annotated contigs.
 
     It will return an output file with the mges information from MetaTOR
-    binning with the added information from the anvio binning and the detected
-    bacterial MAG host of the mges.
+    binning and the detected bacterial MAG host of the mges.
 
     usage:
         host --network=FILE --binning=FILE --mges=FILE --contig-data=FILE
-        [--outfile=FILE] [--threshold=0.1]
+        [--outfile=FILE] [--threshold=0.1] [--min-interacting-contigs=5]
 
     options:
         -b, --binning=FILE      Path to the anvio binning file.
         -c, --contig-data=FILE  Path to the MetaTOR contig data file.
+        -i, --min-interacting-contigs=INT
+                                Minimum number of MAG contigs interacting with
+                                the mgeMAG to validate an association.
+                                [Default: 5]
         -m, --mges=FILE       Path to the file with mges contigs list.
         -n, --network=FILE      Path to the network file.
         -o, --outfile=FILE      Path where to write the output file.
         -t, --threshold=FLOAT   Threshold to consider an association with a MAG.
-                                [Default: 0.1]
+                                [Default: 10]
     """
 
     def execute(self):
