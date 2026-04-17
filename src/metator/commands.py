@@ -1377,13 +1377,12 @@ class Host(AbstractCommand):
 
 
         # Run the host detection
-        mth.host_detection(
-            network,
+        mth.annotate_hosts(
             contig_data,
-            mges_list,
-            mges_list_id,
-            self.args["--outfile"],
-            self.args["--threshold"],
+            network,
+            interaction_threshold,
+            min_interacting_contigs,
+            output_file=self.args["--outfile"],
         )
 
         generate_log_footer(log_file)
