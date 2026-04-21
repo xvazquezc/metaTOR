@@ -367,14 +367,15 @@ def compute_mge_mag_interactions(
     interaction_threshold=10.0,
     min_interacting_contigs=5,
     prop_interacting_contigs=None,
+    use_signal_enrichment=False,
     output_file="mge_mag_interactions.txt",
     image_file="mge_mag_histogram.png",
 ):
     """
     Computes interactions between contigs from mgeMAGs and those from MAGs,
-    and filters them based on a percentage threshold.
+    and filters them based on a threshold applied to the chosen metric.
     Generates two histograms: one showing the total interaction signal (log scale)
-    and another showing the number of MAG contigs interacting with an mgeMAG.
+    and another showing the metric values for accepted associations.
 
     Args:
     - network_data (pd.DataFrame): DataFrame with columns ['contig1', 'contig2', 'signal'].
@@ -382,11 +383,16 @@ def compute_mge_mag_interactions(
     - mags (dict): Dictionary {MAG_name: MAG_object} representing the MAGs.
     - output_file (str): Name of the output text file.
     - image_file (str): Name of the output image file for the histograms.
-    - interaction_threshold (float): Threshold (%) to validate an interaction.
+    - interaction_threshold (float): Threshold to validate an interaction. Interpreted as a
+        percentage of total MGE signal when use_signal_enrichment is False, or as a minimum
+        enrichment ratio (mean MGE→MAG signal / mean intra-MAG signal) when True.
     - min_interacting_contigs (int): Minimum number of MAG contigs interacting with the mgeMAG.
     - prop_interacting_contigs (float | None): Minimum proportion of MAG contigs interacting
         with the mgeMAG in the range (0, 1]. If provided, this filter is used instead
         of min_interacting_contigs.
+    - use_signal_enrichment (bool): When True, use the signal enrichment ratio
+        (mean MGE→MAG edge weight / mean intra-MAG edge weight) instead of the
+        percentage-of-total-signal metric. MAGs whose intra_signal is 0 are skipped.
 
     Returns:
     - image_file (str): Name of the saved image file.
@@ -401,6 +407,7 @@ def compute_mge_mag_interactions(
     for mgemag in mge_mags.values():
         interaction_signals = {}
         interacting_contigs_by_mag = {}
+        interaction_edge_count = {}
         for contig1 in mgemag.contigs.values():
             if contig1 in G:
                 for contig2 in G.neighbors(contig1):
@@ -409,12 +416,21 @@ def compute_mge_mag_interactions(
                         signal = G[contig1][contig2]["weight"]
                         interaction_signals[mag_name] = interaction_signals.get(mag_name, 0) + signal
                         interacting_contigs_by_mag.setdefault(mag_name, set()).add(contig2)
+                        interaction_edge_count[mag_name] = interaction_edge_count.get(mag_name, 0) + 1
 
         total_signal_mgemag = sum(interaction_signals.values())
 
         for mag_name, signal_sum in interaction_signals.items():
-            percent_signal = (signal_sum / total_signal_mgemag) * 100 if total_signal_mgemag > 0 else 0
-            if percent_signal >= interaction_threshold:
+            if use_signal_enrichment:
+                intra_signal = mags[mag_name].intra_signal
+                if intra_signal == 0:
+                    continue
+                mean_mge_mag_signal = signal_sum / interaction_edge_count[mag_name]
+                metric_value = mean_mge_mag_signal / intra_signal
+            else:
+                metric_value = (signal_sum / total_signal_mgemag) * 100 if total_signal_mgemag > 0 else 0
+
+            if metric_value >= interaction_threshold:
                 interacting_contig_count = len(interacting_contigs_by_mag[mag_name])
                 total_mag_contigs = len(mags[mag_name].contigs)
                 required_interacting_contigs = get_required_interacting_contigs(
@@ -423,10 +439,11 @@ def compute_mge_mag_interactions(
                     prop_interacting_contigs,
                 )
                 if interacting_contig_count >= required_interacting_contigs:
-                    interaction_results.append((mgemag.name, mag_name, signal_sum, percent_signal, interacting_contig_count))
+                    interaction_results.append((mgemag.name, mag_name, signal_sum, metric_value, interacting_contig_count))
 
+    metric_column = "Signal enrichment ratio" if use_signal_enrichment else "% of signal"
     with open(output_file, "w") as f:
-        f.write("mgeMAG\tMAG\tTotal Signal\t% of signal\tInteracting Contigs\n")
+        f.write(f"mgeMAG\tMAG\tTotal Signal\t{metric_column}\tInteracting Contigs\n")
         for res in interaction_results:
             mge_name, mag_name, signal_sum, percent_signal, contig_count = res
             f.write(f"{mge_name:<24}\t{mag_name:<24}\t{signal_sum:.6f}\t{percent_signal:.2f}\t{contig_count}\n")
@@ -485,6 +502,7 @@ def annotate_hosts(
     interaction_threshold: int,
     min_interacting_contigs: int,
     prop_interacting_contigs: float | None = None,
+    use_signal_enrichment: bool = False,
     output_file: str = "mge_mag_interactions.txt",
 ) -> None:
 
@@ -509,6 +527,7 @@ def annotate_hosts(
         interaction_threshold=interaction_threshold,
         min_interacting_contigs=min_interacting_contigs,
         prop_interacting_contigs=prop_interacting_contigs,
+        use_signal_enrichment=use_signal_enrichment,
         output_file=output_file,
     )
     logger.info("Association finished!!!")

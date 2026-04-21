@@ -1340,7 +1340,7 @@ class Host(AbstractCommand):
     usage:
         host --network=FILE --binning=FILE --mges=FILE --contig-data=FILE
         [--outfile=FILE] [--threshold=0.1] [--min-interacting-contigs=5]
-        [--prop-interacting-contigs=FLOAT]
+        [--prop-interacting-contigs=FLOAT] [--signal-enrichment]
 
     options:
         -b, --binning=FILE      Path to the anvio binning file.
@@ -1359,6 +1359,12 @@ class Host(AbstractCommand):
         -m, --mges=FILE       Path to the file with mges contigs list.
         -n, --network=FILE      Path to the network file.
         -o, --outfile=FILE      Path where to write the output file.
+        -S, --signal-enrichment  When enabled, use the signal enrichment ratio
+                                (mean MGE→MAG edge weight / mean intra-MAG edge
+                                weight) as the association metric instead of the
+                                default percentage-of-total-signal. The same
+                                --threshold value is compared against this ratio.
+                                MAGs with no intra-MAG signal are skipped.
         -t, --threshold=FLOAT   Threshold to consider an association with a MAG.
                                 [Default: 10]
     """
@@ -1387,12 +1393,16 @@ class Host(AbstractCommand):
         )
 
         interaction_threshold = float(self.args["--threshold"])
+        if interaction_threshold <= 0:
+            raise ValueError("--threshold must be > 0.")
         min_interacting_contigs = int(self.args["--min-interacting-contigs"])
         prop_interacting_contigs = self.args["--prop-interacting-contigs"]
         if prop_interacting_contigs is not None:
             prop_interacting_contigs = float(prop_interacting_contigs)
             if prop_interacting_contigs <= 0 or prop_interacting_contigs > 1:
                 raise ValueError("--prop-interacting-contigs must be in the range (0, 1].")
+
+        use_signal_enrichment = bool(self.args["--signal-enrichment"])
 
         # Run the host detection
         mth.annotate_hosts(
@@ -1401,6 +1411,7 @@ class Host(AbstractCommand):
             interaction_threshold,
             min_interacting_contigs,
             prop_interacting_contigs=prop_interacting_contigs,
+            use_signal_enrichment=use_signal_enrichment,
             output_file=self.args["--outfile"],
         )
 
