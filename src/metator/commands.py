@@ -1362,9 +1362,10 @@ class Host(AbstractCommand):
         -S, --signal-enrichment  When enabled, use the signal enrichment ratio
                                 (mean MGE→MAG edge weight / mean intra-MAG edge
                                 weight) as the association metric instead of the
-                                default percentage-of-total-signal. The same
-                                --threshold value is compared against this ratio.
-                                MAGs with no intra-MAG signal are skipped.
+                                default percentage-of-total-signal. The threshold
+                                parameter applies to this ratio instead of a
+                                percentage. MAGs with no intra-MAG signal are
+                                skipped.
         -t, --threshold=FLOAT   Threshold to consider an association with a MAG.
                                 [Default: 10]
     """
