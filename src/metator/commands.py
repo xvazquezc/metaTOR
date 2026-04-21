@@ -1340,6 +1340,7 @@ class Host(AbstractCommand):
     usage:
         host --network=FILE --binning=FILE --mges=FILE --contig-data=FILE
         [--outfile=FILE] [--threshold=0.1] [--min-interacting-contigs=5]
+        [--prop-interacting-contigs=FLOAT]
 
     options:
         -b, --binning=FILE      Path to the anvio binning file.
@@ -1349,6 +1350,12 @@ class Host(AbstractCommand):
                                 the mgeMAG to validate an association. Reduce
                                 this parameter to 1 for complete/circular MAGs.
                                 [Default: 5]
+        -p, --prop-interacting-contigs=FLOAT
+                    Minimum proportion of MAG contigs interacting
+                    with the mgeMAG to validate an association.
+                    Must be in the range (0, 1]. When provided,
+                    this proportion-based filter is used instead of
+                    --min-interacting-contigs.
         -m, --mges=FILE       Path to the file with mges contigs list.
         -n, --network=FILE      Path to the network file.
         -o, --outfile=FILE      Path where to write the output file.
@@ -1381,6 +1388,11 @@ class Host(AbstractCommand):
 
         interaction_threshold = float(self.args["--threshold"])
         min_interacting_contigs = int(self.args["--min-interacting-contigs"])
+        prop_interacting_contigs = self.args["--prop-interacting-contigs"]
+        if prop_interacting_contigs is not None:
+            prop_interacting_contigs = float(prop_interacting_contigs)
+            if prop_interacting_contigs <= 0 or prop_interacting_contigs > 1:
+                raise ValueError("--prop-interacting-contigs must be in the range (0, 1].")
 
         # Run the host detection
         mth.annotate_hosts(
@@ -1388,6 +1400,7 @@ class Host(AbstractCommand):
             network,
             interaction_threshold,
             min_interacting_contigs,
+            prop_interacting_contigs=prop_interacting_contigs,
             output_file=self.args["--outfile"],
         )
 

@@ -366,6 +366,7 @@ def compute_mge_mag_interactions(
     mge_mags,
     interaction_threshold=10.0,
     min_interacting_contigs=5,
+    prop_interacting_contigs=None,
     output_file="mge_mag_interactions.txt",
     image_file="mge_mag_histogram.png",
 ):
@@ -383,6 +384,9 @@ def compute_mge_mag_interactions(
     - image_file (str): Name of the output image file for the histograms.
     - interaction_threshold (float): Threshold (%) to validate an interaction.
     - min_interacting_contigs (int): Minimum number of MAG contigs interacting with the mgeMAG.
+    - prop_interacting_contigs (float | None): Minimum proportion of MAG contigs interacting
+        with the mgeMAG in the range (0, 1]. If provided, this filter is used instead
+        of min_interacting_contigs.
 
     Returns:
     - image_file (str): Name of the saved image file.
@@ -412,7 +416,13 @@ def compute_mge_mag_interactions(
             percent_signal = (signal_sum / total_signal_mgemag) * 100 if total_signal_mgemag > 0 else 0
             if percent_signal >= interaction_threshold:
                 interacting_contig_count = len(interacting_contigs_by_mag[mag_name])
-                if interacting_contig_count >= min_interacting_contigs:
+                total_mag_contigs = len(mags[mag_name].contigs)
+                required_interacting_contigs = get_required_interacting_contigs(
+                    total_mag_contigs,
+                    min_interacting_contigs,
+                    prop_interacting_contigs,
+                )
+                if interacting_contig_count >= required_interacting_contigs:
                     interaction_results.append((mgemag.name, mag_name, signal_sum, percent_signal, interacting_contig_count))
 
     with open(output_file, "w") as f:
@@ -474,6 +484,7 @@ def annotate_hosts(
     network_data: pd.DataFrame,
     interaction_threshold: int,
     min_interacting_contigs: int,
+    prop_interacting_contigs: float | None = None,
     output_file: str = "mge_mag_interactions.txt",
 ) -> None:
 
@@ -497,11 +508,34 @@ def annotate_hosts(
         mge_mags,
         interaction_threshold=interaction_threshold,
         min_interacting_contigs=min_interacting_contigs,
+        prop_interacting_contigs=prop_interacting_contigs,
         output_file=output_file,
     )
     logger.info("Association finished!!!")
 
     return mags, mge_mags
+
+
+def get_required_interacting_contigs(
+    total_mag_contigs: int,
+    min_interacting_contigs: int,
+    prop_interacting_contigs: float | None = None,
+) -> int:
+    """Return required interacting contigs count for a MAG.
+
+    If ``prop_interacting_contigs`` is provided, the threshold is computed with
+    ``ceil(prop_interacting_contigs * total_mag_contigs)`` and clamped to at
+    least 1 to avoid zero-contig thresholds. Otherwise, returns
+    ``min_interacting_contigs``.
+    """
+
+    if prop_interacting_contigs is None:
+        return int(min_interacting_contigs)
+
+    if prop_interacting_contigs <= 0 or prop_interacting_contigs > 1:
+        raise ValueError("prop_interacting_contigs must be in the range (0, 1].")
+
+    return max(1, math.ceil(prop_interacting_contigs * total_mag_contigs))
 
 
 # Call to the main function `annotate_hosts`
@@ -512,6 +546,7 @@ if __name__ == "__main__":
     bin_summary_file = "bin_summary.txt"
     interaction_threshold = 10
     min_interacting_contigs = 5
+    prop_interacting_contigs = None
 
     # Load data
     contig_data = pd.read_csv(contig_data_file, sep="\t")
@@ -520,4 +555,10 @@ if __name__ == "__main__":
     network_data = pd.read_csv(network_data_file, sep="\t", names=["contig1", "contig2", "signal"])
 
     # Run the main function
-    mags, mge_mags = annotate_hosts(contig_data, network_data, bin_summary, interaction_threshold, min_interacting_contigs)
+    mags, mge_mags = annotate_hosts(
+        contig_data,
+        network_data,
+        interaction_threshold,
+        min_interacting_contigs,
+        prop_interacting_contigs=prop_interacting_contigs,
+    )
